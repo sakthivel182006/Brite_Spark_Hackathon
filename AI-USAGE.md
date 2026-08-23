@@ -84,7 +84,7 @@ The developer reproduced the problems locally, applied appropriate fixes, and ve
 
 AI was used to suggest test scenarios and edge cases.
 
-The developer implemented and executed tests against the actual application.
+I implemented and executed tests against the actual application.
 
 Testing covered scenarios including:
 
