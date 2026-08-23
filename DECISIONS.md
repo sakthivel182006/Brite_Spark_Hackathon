@@ -1,6 +1,4 @@
-<<<<<<< HEAD
 
-=======
 # Engineering Decisions — Brite Spark 2026
 
 ## Problem 3 — No Wrong Door
@@ -44,4 +42,3 @@ Resident Index
 Unavailable
     ↓
 Unified API returns partial response
->>>>>>> 45b3cd3 (docs: add VS Code setup and run instructions)
