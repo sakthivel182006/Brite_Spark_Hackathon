@@ -39,28 +39,44 @@ class UnifiedAPIHandler(BaseHTTPRequestHandler):
 
         if path == "/unified":
 
+            # -------------------------------------------------
+            # 1. Get Resident Index independently
+            # -------------------------------------------------
+            residents = []
+            resident_available = True
+            resident_error = None
+
             try:
                 residents = get_all_residents()
 
+            except Exception as error:
+                resident_available = False
+                resident_error = str(error)
+
+            # -------------------------------------------------
+            # 2. Get Benefits Register independently
+            # -------------------------------------------------
+            try:
                 benefits = get_all_benefits()
 
-                unified_view = build_unified_view(
-                    residents,
-                    benefits
-                )
-
-                self.send_json(200, unified_view)
-
             except Exception as error:
+                benefits = {
+                    "available": False,
+                    "records": [],
+                    "error": str(error)
+                }
 
-                self.send_json(
-                    500,
-                    {
-                        "status": "error",
-                        "message": str(error)
-                    }
-                )
+            # -------------------------------------------------
+            # 3. Aggregate both results
+            # -------------------------------------------------
+            unified_view = build_unified_view(
+                residents=residents,
+                benefits_result=benefits,
+                resident_available=resident_available,
+                resident_error=resident_error
+            )
 
+            self.send_json(200, unified_view)
             return
 
         self.send_json(
@@ -76,6 +92,7 @@ class UnifiedAPIHandler(BaseHTTPRequestHandler):
 
 
 def start_server():
+
     server = ThreadingHTTPServer(
         (HOST, PORT),
         UnifiedAPIHandler

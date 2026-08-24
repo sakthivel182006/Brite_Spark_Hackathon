@@ -1,7 +1,16 @@
-def build_unified_view(residents, benefits_result):
+def build_unified_view(
+    residents,
+    benefits_result,
+    resident_available=True,
+    resident_error=None
+):
     """
     Combine Resident Index and Benefits Register information
     into one unified response.
+
+    A failed source does not make the whole unified API fail.
+    The caller receives available data plus explicit source
+    availability and error information.
 
     We do not perform identity matching because the two
     source systems have no shared key.
@@ -11,13 +20,20 @@ def build_unified_view(residents, benefits_result):
     benefits_records = benefits_result.get("records", [])
     benefits_error = benefits_result.get("error")
 
-    result = {
-        "status": "complete" if benefits_available else "partial",
+    # Complete only when BOTH sources are available.
+    if resident_available and benefits_available:
+        status = "complete"
+    else:
+        status = "partial"
+
+    return {
+        "status": status,
 
         "resident_index": {
-            "available": True,
+            "available": resident_available,
             "record_count": len(residents),
-            "records": residents
+            "records": residents,
+            "error": resident_error
         },
 
         "benefits_register": {
@@ -27,5 +43,3 @@ def build_unified_view(residents, benefits_result):
             "error": benefits_error
         }
     }
-
-    return result
