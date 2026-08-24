@@ -7,34 +7,132 @@ A lightweight Python API that combines data from two legacy systems:
 - **Resident Index** — REST/JSON, 620 residents, paginated
 - **Benefits Register** — XML, 540 benefits, slow and may return HTTP 500
 
+
 ---
 
 ## Architecture
 
 ```text
-                    Client
-                      |
-                      v
-              Unified API :8080
-                      |
-              +-------+-------+
-              |               |
-              v               v
-       Resident Adapter   Benefits Adapter
-              |               |
-              v               v
-        REST :8081          XML :8082
-              |               |
-              +-------+-------+
-                      |
-                      v
-                  Aggregator
-                      |
-                      v
-              Unified Response
+                         CLIENT / JUDGE
+                              |
+                              v
+                    +----------------------+
+                    |   Unified API :8080  |
+                    |      /unified        |
+                    +----------+-----------+
+                               |
+                 +-------------+-------------+
+                 |                           |
+                 v                           v
+        +------------------+       +-------------------+
+        | Resident Adapter |       | Benefits Adapter  |
+        +--------+---------+       +---------+---------+
+                 |                           |
+                 v                           v
+        +------------------+       +-------------------+
+        | REST Service     |       | XML Service       |
+        | :8081            |       | :8082             |
+        +--------+---------+       +---------+---------+
+                 |                           |
+                 v                           v
+        Resident Records            Benefit Records
+             620                         540
+                 |                           |
+                 +-------------+-------------+
+                               |
+                               v
+                    +----------------------+
+                    |      Aggregator       |
+                    +----------+-----------+
+                               |
+                               v
+                    +----------------------+
+                    |   Unified Response   |
+                    +----------------------+
+```
+
+### Runtime Outcomes
+
+#### 1. Both Sources Available
+
+```text
+Resident: AVAILABLE        Benefits: AVAILABLE
+      \\                         /
+       \\                       /
+        +------ Aggregator ----+
+                   |
+                   v
+              status: complete
+              Residents: 620
+              Benefits: 540
+```
+
+#### 2. Resident Source Unavailable
+
+```text
+Resident: UNAVAILABLE      Benefits: AVAILABLE
+      X                         |
+      |                         |
+      +------ Aggregator <------+
+                   |
+                   v
+              status: partial
+              Residents: 0
+              Benefits: 540
+              Resident error: reported
+```
+
+#### 3. Benefits Source Unavailable
+
+```text
+Resident: AVAILABLE        Benefits: UNAVAILABLE
+      |                         X
+      |                         |
+      +------ Aggregator ------+
+                   |
+                   v
+              status: partial
+              Residents: 620
+              Benefits: 0
+              Benefits error: reported
+```
+
+#### 4. Both Sources Unavailable
+
+```text
+Resident: UNAVAILABLE      Benefits: UNAVAILABLE
+      X                         X
+       \\                       /
+        \\                     /
+         +--- Aggregator ----+
+                   |
+                   v
+              status: partial
+              Residents: 0
+              Benefits: 0
+              Both errors: reported
+```
+
+### Degradation Principle
+
+```text
+Source failure
+     |
+     v
+Do NOT fail the entire Unified API
+     |
+     v
+Return all data that is still available
+     |
+     v
+Set status = "partial"
+     |
+     v
+Expose the failed source and error
 ```
 
 ---
+
 
 ## Technology Stack
 
