@@ -70,6 +70,37 @@ def test_unified_api():
         print("Expected: complete")
         print("Actual:", data["status"])
 
+    elif not resident.get("available") and not benefits.get("available"):
+
+        assert data["status"] == "partial", (
+            "Both sources are unavailable, "
+            "but status is not 'partial'"
+        )
+
+        assert resident["record_count"] == 0, (
+            "Resident records should be 0"
+        )
+
+        assert benefits["record_count"] == 0, (
+            "Benefits records should be 0"
+        )
+
+        assert resident.get("error"), (
+            "Resident failure must be reported"
+        )
+
+        assert benefits.get("error"), (
+            "Benefits failure must be reported"
+        )
+
+        print()
+        print("FINAL RESULT:")
+        print("CASE: Both sources unavailable")
+        print("RESULT: PASS")
+        print("Expected: partial")
+        print("Actual:", data["status"])
+        
+
     elif not resident.get("available"):
 
         assert data["status"] == "partial", (
